@@ -16,13 +16,20 @@ class ci_calendario_comahue extends toba_ci
         protected $s__datos_filtro=array();              //guarda un cjto de registros filtrados
         protected $s__asig_solapadas=null;
         
+                
+        //-----------------------------------------------------------------------------------------------
         //---- Pant Edicion -----------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------------
+        
+        function conf__pant_edicion (toba_ei_pantalla $pantalla){
+            $this->pantalla()->tab('pant_horarios')->desactivar();
+            $this->pantalla()->tab('pant_periodo')->desactivar();
+        }
         
         //---- Calendario -------------------------------------------------------------------------------
         
         function conf__calendario (toba_ei_calendario $calendario){
             
-            $this->pantalla()->tab('pant_horarios')->desactivar();
             $calendario->set_seleccionar_solo_dias_pasados(FALSE);
             //hace que el calendario se vea mas grande
             $calendario->set_ver_contenidos(TRUE);
@@ -45,13 +52,19 @@ class ci_calendario_comahue extends toba_ci
             $this->set_pantalla('pant_edicion');
         }
         
+        //-----------------------------------------------------------------------------------------------
         //---- Pant Horarios ----------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------------
+        
+        function conf__pant_horarios (toba_ei_pantalla $pantalla){
+            $this->pantalla()->tab('pant_edicion')->desactivar();
+            $this->pantalla()->tab("pant_periodo")->desactivar();
+        }
         
         //---- Formulario -------------------------------------------------------------------------------
         
         function conf__formulario (toba_ei_formulario $form){
             
-            $this->pantalla()->tab('pant_edicion')->desactivar();
             $nombre_usuario=toba::usuario()->get_id();
             $id_sede=$this->dep('datos')->tabla('persona')->get_sede_para_usuario_logueado($nombre_usuario);
 
@@ -175,6 +188,40 @@ class ci_calendario_comahue extends toba_ci
             }
         }
         
+        /*
+         * Vinculo asociado al boton PDF del cuadro horarios_disponibles. Se usa para generar un docuemento pdf
+         * personalizado. Es una alternativa para generar un reporte con los horarios disponibles. Formará parte
+         * del sistema aunque no se use.
+         */
+        function vista_pdf (toba_vista_pdf $salida){
+            ob_end_clean();
+            $salida->set_nombre_archivo("Horarios Disponibles.pdf");
+            $pdf=$salida->get_pdf();
+            $encabezado=$this->generar_encabezado(150);
+            //sin margenes se superpone el texto con la imagen encabezado_reporte
+            $pdf->ezSetMargins(68, 30, 35, 35);
+            $pdf->addJpegFromFile(toba_dir().'/www/img/encabezado_reporte.jpg', 35, 785, 260, 58);
+            //definimos el formato del pie de pagina
+            $pie_de_pagina="Página {PAGENUM} de {TOTALPAGENUM}";
+            $pdf->ezText($encabezado, 8, array('justification'=>'center'));
+            //agregamos el numero de pagina al pdf
+            $pdf->ezStartPageNumbers(550, 20, 8, 'left', utf8_d_seguro($pie_de_pagina));
+            
+        }
+        
+        function generar_encabezado ($fin){
+            $fecha=date('d-m-Y', strtotime($this->s__fecha_consulta));
+            $encabezado="Fecha : $fecha";
+            $i=0;
+            while ($i < $fin){
+                $encabezado .= '-';
+                $i += 1;
+            }
+            
+            $hora=date('H:i:s');
+            return ($encabezado."Hora : $hora");
+        }
+        
         //---- Cuadro Asignaciones ----------------------------------------------------------------------
         
         function conf__cuadro_asignaciones (toba_ei_cuadro $cuadro){
@@ -196,14 +243,26 @@ class ci_calendario_comahue extends toba_ci
         function evt__cuadro_asignaciones__ver ($datos){
             //debemos extraer las asig_per solapadas con asig_definitivas. Las asig_per estan en 
             //s__asignaciones_periodo
-            print_r($this->s__asignaciones_periodo);
             $this->s__asig_solapadas=$this->extraer_asignaciones_solapadas($datos);
+            
+            if(count($this->s__asig_solapadas)==0){
+                $mensaje=" No existen asignaciones por período solapadas ";
+                toba::notificacion()->agregar(utf8_decode($mensaje), 'info');
+            }
+            else{
+                $this->set_pantalla("pant_periodo");
+            }
+            
         }
         
         function extraer_asignaciones_solapadas ($datos){            
             $asig_solapadas=array();
             foreach ($this->s__asignaciones_periodo as $clave=>$valor){
                 if($this->analizar_horario($datos, $valor)){
+                    //agregamos valores existentes pra el corte de control
+                    $valor['finalidad_def']=$datos['finalidad'];
+                    $valor['hora_inicio_def']=$datos['hora_inicio'];
+                    $valor['hora_fin_def']=$datos['hora_fin'];
                     $asig_solapadas[]=$valor;
                 }
             }
@@ -225,30 +284,7 @@ class ci_calendario_comahue extends toba_ci
                    ));
         }
         
-        //---- Cuadro Asignaciones Periodo --------------------------------------------------------------
-        
-        function conf__cuadro_asignaciones_periodo (toba_ei_cuadro $cuadro){
-            if(count($this->s__asig_solapadas)>0){
-                $cuadro->descolapsar();
-                $cuadro->set_titulo("Asignaciones solapadas ");
-                $cuadro->set_datos($this->s__asig_solapadas);
-            }
-            else{
-                //s__asig_solapadas es null si no pasamos por evt__ver. Si pasamos por este metodo s__asig_periodo
-                //es un arreglo vacio o posee algunos eltos.
-                if(!isset($this->s__asig_solapadas)){
-                    $cuadro->colapsar();
-                }
-                else{
-                    $mensaje=" No existen asignaciones por período solapadas ";
-                    toba::notificacion()->agregar(utf8_decode($mensaje), 'info');
-                    $cuadro->colapsar();
-                }
-            }
-            
-            $this->s__asig_solapadas=null;
-        }
-        
+                
         //---- obtener asignaciones segun fecha ---------------------------------------------------------
         
         function obtener_asignaciones (){
@@ -292,9 +328,10 @@ class ci_calendario_comahue extends toba_ci
                 $mensaje="No existen horarios disponibles para el día seleccionado";
                 toba::notificacion()->agregar(utf8_decode($mensaje), 'info');
             }
-//            else{
-//                $this->agregar_capacidad();
-//            }
+            
+            //print_r($this->s__horarios_disponibles);
+            toba::memoria()->set_dato_operacion(0, $this->s__fecha_consulta);
+            
         }
         
         /*
@@ -492,6 +529,31 @@ class ci_calendario_comahue extends toba_ci
                 }
             }
             return $existe;
+        }
+        
+        //-----------------------------------------------------------------------------------------------
+        //----Pant Periodo ------------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------------
+        
+        function conf__pant_periodo (toba_ei_pantalla $pantalla){
+            $this->pantalla()->tab("pant_edicion")->desactivar();
+            $this->pantalla()->tab("pant_horarios")->desactivar();
+        }
+        
+        //---- Cuadro Asignaciones Periodo --------------------------------------------------------------
+        
+        function conf__cuadro_asignaciones_periodo (toba_ei_cuadro $cuadro){
+            if(count($this->s__asig_solapadas)>0){
+                $cuadro->descolapsar();
+                $cuadro->set_titulo("Asignaciones solapadas ");
+                $cuadro->set_datos($this->s__asig_solapadas);
+            }
+            
+            $this->s__asig_solapadas=null;
+        }
+        
+        function evt__volver_horarios (){
+            $this->set_pantalla("pant_horarios");
         }
         
 //        function agregar_capacidad (){

@@ -365,7 +365,8 @@ class dt_asignacion extends toba_datos_tabla
          * En esta funcion se incluyen asig_periodo correspondientes a eventos o examenes parciales.
          */
         function get_asignaciones_periodo_por_fecha_cuatrimestre ($id_sede, $dia, $id_periodo, $fecha){
-            $sql="SELECT t_a.finalidad, t_a.id_aula, t_au.nombre as aula, t_a.hora_inicio, t_a.hora_fin, t_a.tipo_asignacion,
+            $sql="SELECT t_a.finalidad, t_a.id_aula, t_au.nombre as aula, t_a.hora_inicio, t_a.hora_fin, 
+                         t_a.tipo_asignacion, 
                          t_au.capacidad, 'Periodo' as tipo, t_a.cantidad_alumnos as cant_alumnos
                   FROM asignacion t_a 
                   JOIN aula t_au ON (t_a.id_aula=t_au.id_aula)
