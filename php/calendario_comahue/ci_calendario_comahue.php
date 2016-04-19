@@ -181,7 +181,7 @@ class ci_calendario_comahue extends toba_ci
                     $cuadro->set_datos($this->s__datos_filtro);
                 }
                 else{
-                        $cuadro->set_titulo("Horarios disponibles");
+                        $cuadro->set_titulo("Horarios Disponibles");
                         $cuadro->set_datos($this->s__horarios_disponibles);
                     
                 }
@@ -197,29 +197,64 @@ class ci_calendario_comahue extends toba_ci
             ob_end_clean();
             $salida->set_nombre_archivo("Horarios Disponibles.pdf");
             $pdf=$salida->get_pdf();
-            $encabezado=$this->generar_encabezado(150);
+            $encabezado=$this->generar_encabezado(150, TRUE);
+            //$encabezado .= ('\nHorarios Disponibles\n'.$this->generar_encabezado(strlen($encabezado), FALSE).'\n');
             //sin margenes se superpone el texto con la imagen encabezado_reporte
             $pdf->ezSetMargins(68, 30, 35, 35);
             $pdf->addJpegFromFile(toba_dir().'/www/img/encabezado_reporte.jpg', 35, 785, 260, 58);
             //definimos el formato del pie de pagina
             $pie_de_pagina="Página {PAGENUM} de {TOTALPAGENUM}";
-            $pdf->ezText($encabezado, 8, array('justification'=>'center'));
+            $pdf->ezText($encabezado, 8, array('justification'=>'center', 'spacing'=>1.5));
             //agregamos el numero de pagina al pdf
             $pdf->ezStartPageNumbers(550, 20, 8, 'left', utf8_d_seguro($pie_de_pagina));
             
+            $pdf->ezText("Horarios Disponibles", 8, array('justification'=>'center', 'spacing'=>1.5));
+            $pdf->ezText($this->generar_encabezado(strlen($encabezado), FALSE), 8, array('justification'=>'center', 'spacing'=>1.5));
+            
+            $this->agregar_tabla($pdf);            
+            
         }
         
-        function generar_encabezado ($fin){
+        function agregar_tabla (Cezpdf $pdf){
+            $opciones=array(
+                'splitRows' => 0,
+                'rowGraph' => 0,
+                'showHeadings' => true,
+                'titleFontSize' => 6,
+                'fontSize' => 6, //definimos el tamanio de fuente
+                'shadeCol' => array(0.9,0.9,0.9),//especificamos el color de cada fila
+                'xOrientation' => 'center',
+                'width' => 500,
+                'xPos' => 'centre',
+                'yPos' => 'centre',
+            );
+            
+            $columnas=array(
+                'aula' => 'Aula',
+                'capacidad' => 'Capacidad',
+                'hora_inicio' => 'Hora Inicio',
+                'hora_fin' => 'Hora Fin',
+            );
+            
+            $pdf->ezTable($this->s__horarios_disponibles, $columnas, $title, $opciones);
+        }
+        
+        function generar_encabezado ($fin, $true){
             $fecha=date('d-m-Y', strtotime($this->s__fecha_consulta));
-            $encabezado="Fecha : $fecha";
+            $encabezado=($true) ? "Fecha : $fecha" : '';
             $i=0;
             while ($i < $fin){
                 $encabezado .= '-';
                 $i += 1;
             }
             
-            $hora=date('H:i:s');
-            return ($encabezado."Hora : $hora");
+            if($true){
+                $hora=date('H:i:s');
+                return ($encabezado."Hora : $hora");
+            }
+            else{
+                return $encabezado;
+            }
         }
         
         //---- Cuadro Asignaciones ----------------------------------------------------------------------

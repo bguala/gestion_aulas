@@ -143,7 +143,7 @@ class ci_memorando_por_fecha extends toba_ci
         }
         
         function agregar_tabla (Cezpdf $pdf){
-            //definimos el formato de las tablas 
+            //definimos el formato de la tabla 
             $opciones=array(
                 'splitRows' => 0,
                 'rowGraph' => 0,

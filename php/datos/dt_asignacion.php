@@ -245,6 +245,38 @@ class dt_asignacion extends toba_datos_tabla
         }
         
         /*
+         * Esta funcion se utiliza en la operacion Generar Solicitud, para llenar el combo tipo de la seccion 
+         * Datos de la Solicitud. La diferencia con get_tipo_asignacion es que se devuelve los tipos de asignacion
+         * excepto cursada,ademas agrega un campo otro para hacer una ext javascript en el formulario, de esta 
+         * manera permitimos que el usuario registre un nuevo tipo en el sistema. 
+         */
+        function get_tipos (){
+            $sql="SELECT tipo
+                  FROM tipo_asignacion 
+                  WHERE tipo <> 'CURSADA'";
+            $tipos=toba::db('gestion_aulas')->consultar($sql);
+            $tipos[]=array('tipo'=>'OTRO');
+            
+            return ($tipos);
+        }
+        
+        /*
+         * Esta funcion se utiliza en la operacion Generar Solicitud para cargar un combo llamado organizaciones
+         * existentes. 
+         */
+        function get_organizaciones ($tipo){
+            if(strcmp('Organizacion', $tipo)==0){
+                $sql="SELECT nombre_org
+                      FROM organizacion";
+                return (toba::db('gestion_aulas')->consultar($sql));
+            }
+            else{
+                return array();
+            }
+        }
+        
+        
+        /*
          * Esta funcion se utiliza en la operacion Calendario Comahue, permite obtener un cjto de asignaciones 
          * para empezar el calculo de horarios disponibles para una fecha en particular. 
          * @ id_periodo : absorbe a ( cuatrimestre, anio ) y se corresponde con un cuatrimestre.

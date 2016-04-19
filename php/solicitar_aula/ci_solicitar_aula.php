@@ -37,7 +37,7 @@ class ci_solicitar_aula extends toba_ci
             $this->s__datos_form=array(
                 'facultad' => $unidad_academica[0]['facultad'],
                 'sede' => $unidad_academica[0]['sede'],
-                'fecha' => date('d-m-y', strtotime($this->s__fecha_consulta))
+                'fecha' => date('d-m-Y', strtotime($this->s__fecha_consulta))
             );
             $this->calcular_horarios_disponibles_por_facultad();
             //se utiliza para realizar busquedas por capacidad, hora_inicio y hora_fin.
@@ -286,41 +286,45 @@ class ci_solicitar_aula extends toba_ci
 
 	function evt__formulario__alta($datos)
 	{
-            if($this->verificar_horario($datos['hora_inicio'],$datos['hora_fin'],$datos['inicio'],$datos['fin'])){
-                $this->registrar_solicitud($datos);
+            if(strcmp('OTRO', $datos['tipo'])==0){
+                $this->dep('datos')->tabla('tipo_asignacion')->nueva_fila(array('tipo'=>$datos['tipo_nombre']));
+                $this->dep('datos')->tabla('tipo_asignacion')->sincronizar();
+                $this->dep('datos')->tabla('tipo_asignacion')->resetear();
             }
-            else{
-                $mensaje=" Existen conflictos con el horario ";
-                toba::notificacion()->agregar(utf8_decode($mensaje), 'error');
-            }            
+            
+            //persistimos informacion en la tabla organizacion 
+            if(strcmp('Organizacion', $datos['tipo'])==0){
+                $organizacion=array(
+                    'nombre_org' => strtoupper($datos['nombre_org']),
+                    'tipo' => 'ORG',
+                    'telefono_org' => $datos['telefono_org'],
+                    'email_org' => $datos['email_org']
+                );
+                $this->dep('datos')->tabla('organizacion')->nueva_fila($organizacion);
+                $this->dep('datos')->tabla('organizacion')->sincronizar();
+                $this->dep('datos')->tabla('organizacion')->resetear();
+            }
+            
+            //anteriormente se hacia un chequeo de horarios, ya no es necesario
+            $this->registrar_solicitud($datos);
+                        
 	}
-        
-        function verificar_horario ($hora_inicio, $hora_fin, $hora_inicio_seleccionada, $hora_fin_seleccionada){
-            return (($hora_fin>=$hora_inicio) && (($hora_inicio>=$hora_inicio_seleccionada) && ($hora_inicio<=$hora_fin_seleccionada)) && ($hora_fin<=$hora_fin_seleccionada));
-        }
-        
+                
         function registrar_solicitud ($datos){
-            //print_r($datos);exit();
+            
             $nombre=  strtoupper($datos['nombre']);
             $apellido=  strtoupper($datos['apellido']);
-            $fecha= date('d/m/y');
-            //$fecha='01/09/2015';
+            $fecha= date('d/m/Y');
+            
             $datos['estado']='Pendiente';
             $datos['id_sede']=$this->s__id_sede;
             $datos['id_aula']=$this->s__datos_cuadro['id_aula'];
             
             $descripcion="$nombre $apellido ha registrado una SOLICITUD de aula el dia $fecha, en su Unidad Académica";
-//            if(strcmp($datos['tipo'], 'Solicitud de aula') == 0){
-                $datos['tipo']=TRUE;
-                $asunto="Solicitud de aula";
-                
-//            }
-//            else{
-//                $asunto="Denuncia de aula";
-//                $descripcion .= " DENUNCIA de aula el dia $fecha, en su Unidad Academica";
-//                $datos['tipo']=FALSE;
-//            }
-            
+
+            $datos['tipo']=TRUE;
+            $asunto="SOLICITUD DE AULA";
+                            
             $this->dep('datos')->tabla('solicitud')->nueva_fila($datos);
             $this->dep('datos')->tabla('solicitud')->sincronizar();
             $this->dep('datos')->tabla('solicitud')->resetear();
@@ -332,7 +336,7 @@ class ci_solicitar_aula extends toba_ci
             $envio=$email->enviar_email($destinatario[0]['correo_electronico'], $asunto, $descripcion);
             
             if(!$envio){
-                toba::notificacion()->agregar('Se produjo un error al intentar enviar un email.', 'error');
+                toba::notificacion()->agregar(utf8_decode('Se produjo un error al intentar enviar un email de notificación.'), 'error');
                 $this->s__solicitud_registrada=FALSE;
             }
             else{

@@ -82,7 +82,7 @@ INSERT INTO apex_objeto_ut_formulario (objeto_ut_formulario_proyecto, objeto_ut_
 	NULL, --analisis_cambios
 	'0', --no_imprimir_efs_sin_estado
 	'0', --resaltar_efs_con_estado
-	'<p style="font-size:16px;font-weight:bold;text-align:center;text-decoration:underline">Horarios Disponibles&nbsp;</p>
+	'<p style="font-size:16px;font-weight:bold;text-align:center;text-decoration:underline"><strong>Horarios Disponibles</strong></p>
 <table>
 	<tbody>
 		<tr>
