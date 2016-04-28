@@ -4,7 +4,8 @@ require_once('3ros/phpmailer/class.phpmailer.php');
 require_once('3ros/phpmailer/class.smtp.php');
 
 /* 
- * Esta clase permite enviar emails a traves de la libreria PHPMailer.
+ * Esta clase es un Wraper de PHPMailer.
+ * Permite enviar emails a traves de la libreria PHPMailer.
  */
 class Email {
     

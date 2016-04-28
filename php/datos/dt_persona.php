@@ -99,5 +99,17 @@ class dt_persona extends toba_datos_tabla
             return (toba::db('gestion_aulas')->consultar($sql));
         }
         
+        /*
+         * 
+         */
+        function get_datos_responsable_aulas ($id_sede){
+            $sql="SELECT t_p.nombre, t_p.apellido
+                  FROM persona t_p 
+                  JOIN administrador t_a ON (t_p.nro_doc=t_a.nro_doc AND t_p.tipo_doc=t_a.tipo_doc) 
+                  WHERE t_a.id_sede=$id_sede";
+            
+            return toba::db('gestion_aulas')->consultar($sql);
+        }
+        
 }
 ?>

@@ -287,22 +287,25 @@ class ci_solicitar_aula extends toba_ci
 	function evt__formulario__alta($datos)
 	{
             if(strcmp('OTRO', $datos['tipo'])==0){
-                $this->dep('datos')->tabla('tipo_asignacion')->nueva_fila(array('tipo'=>$datos['tipo_nombre']));
+                $this->dep('datos')->tabla('tipo_asignacion')->nueva_fila(array('tipo'=>  strtoupper($datos['tipo_nombre'])));
                 $this->dep('datos')->tabla('tipo_asignacion')->sincronizar();
                 $this->dep('datos')->tabla('tipo_asignacion')->resetear();
             }
             
-            //persistimos informacion en la tabla organizacion 
+            //persistimos informacion en la tabla persona, no es lo mejor, pero hay que ahorrarse 
+            //complicaciones.
             if(strcmp('Organizacion', $datos['tipo'])==0){
                 $organizacion=array(
-                    'nombre_org' => strtoupper($datos['nombre_org']),
-                    'tipo' => 'ORG',
-                    'telefono_org' => $datos['telefono_org'],
-                    'email_org' => $datos['email_org']
+                    'nro_doc' => strtoupper($datos['nombre_org']),
+                    'tipo_doc' => 'ORG',
+                    'telefono' => $datos['telefono_org'],
+                    'correo_electronico' => strtolower($datos['email_org']),
+                    'nombre' => strtoupper($datos['nombre_org']),
+                    'apellido' => ' '
                 );
-                $this->dep('datos')->tabla('organizacion')->nueva_fila($organizacion);
-                $this->dep('datos')->tabla('organizacion')->sincronizar();
-                $this->dep('datos')->tabla('organizacion')->resetear();
+                $this->dep('datos')->tabla('persona')->nueva_fila($organizacion);
+                $this->dep('datos')->tabla('persona')->sincronizar();
+                $this->dep('datos')->tabla('persona')->resetear();
             }
             
             //anteriormente se hacia un chequeo de horarios, ya no es necesario
@@ -314,13 +317,13 @@ class ci_solicitar_aula extends toba_ci
             
             $nombre=  strtoupper($datos['nombre']);
             $apellido=  strtoupper($datos['apellido']);
-            $fecha= date('d/m/Y');
+            $fecha= date('d-m-Y', strtotime($this->s__fecha_consulta));
             
             $datos['estado']='Pendiente';
             $datos['id_sede']=$this->s__id_sede;
             $datos['id_aula']=$this->s__datos_cuadro['id_aula'];
             
-            $descripcion="$nombre $apellido ha registrado una SOLICITUD de aula el dia $fecha, en su Unidad Académica";
+            $descripcion="$nombre $apellido ha registrado una SOLICITUD de aula para el dia $fecha, en su Establecimiento. ";
 
             $datos['tipo']=TRUE;
             $asunto="SOLICITUD DE AULA";

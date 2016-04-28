@@ -1,4 +1,8 @@
 <?php
+
+require_once(toba_dir().'/proyectos/gestion_aulas/php/api/Calendario.php');
+require_once(toba_dir().'/proyectos/gestion_aulas/php/api/HorariosDisponibles.php');
+
 class ci_cargar_asignaciones extends toba_ci
 {
         protected $s__contador;
@@ -24,13 +28,25 @@ class ci_cargar_asignaciones extends toba_ci
         protected $s__datos_form_asignacion;            //guarda los datos cargados en el form_asignacion, sirve para mantener eñ estado del formulario cuando nos cambiamos a las pantallas pant_extra o pant_catedra
         protected $s__docentes_seleccionados=array();   //contiene los miembros del equipo de catedra
         protected $s__cargar_fechas;
+        protected $s__calendario;
+        
+        //guardamos la cantidad de dias que forman a un mes. Se configura teniendo en cuenta anios bisiestos
+        protected $_meses=array(
+            1 => 31, 2 => 0, 3 => 31, 4 => 30, 5 => 31, 6 => 30, 7 => 31, 8 => 31, 9 => 30, 10 => 31, 11 => 30, 12 => 31
+        );
+    
+        //guardamos los dias de la semana, esto es util para listar los dias correctos de un periodo
+        protected $_dias=array(
+            1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'
+        );
         
         //#5252C8
         //secuencia de asignacion_periodo : asignacion_periodo_id_asignacion_seq
         //secuencia de esta_formada :  esta_formada_id_asignacion_seq
         
-        
+        //-----------------------------------------------------------------------------------
         //---- Pant Edicion -----------------------------------------------------------------
+        //-----------------------------------------------------------------------------------
                 
         //---- Formulario -------------------------------------------------------------------
         
@@ -280,8 +296,9 @@ class ci_cargar_asignaciones extends toba_ci
             $this->s__contador += 1;
         }
                 
-        
+        //---------------------------------------------------------------------------------------
         //---- Pant_Asignacion ------------------------------------------------------------------
+        //---------------------------------------------------------------------------------------
         
         function conf__pant_asignacion (toba_ei_pantalla $pantalla){
             $this->pantalla()->tab('pant_edicion')->desactivar();
@@ -1242,7 +1259,9 @@ class ci_cargar_asignaciones extends toba_ci
             return $fin;
         }
         
+        //---------------------------------------------------------------------------------------------
         //---- Pant Extra -----------------------------------------------------------------------------
+        //---------------------------------------------------------------------------------------------
         
         function conf__pant_extra (toba_ei_pantalla $pantalla){ 
             $this->pantalla()->tab('pant_edicion')->desactivar();
@@ -1264,31 +1283,31 @@ class ci_cargar_asignaciones extends toba_ci
         
         //---- Calendario ------------------------------------------------------------------------------
         
-        function conf__calendario (toba_ei_calendario $calendario){
-            $calendario->set_sab_seleccionable(true); 
-            $calendario->set_dom_seleccionable(true);
-            $calendario->set_seleccionar_solo_dias_pasados(false);
-        }
+//        function conf__calendario (toba_ei_calendario $calendario){
+//            $calendario->set_sab_seleccionable(true); 
+//            $calendario->set_dom_seleccionable(true);
+//            $calendario->set_seleccionar_solo_dias_pasados(false);
+//        }
         
-        function evt__calendario__seleccionar_dia ($seleccion){
-            $fecha="{$seleccion['dia']}-{$seleccion['mes']}-{$seleccion['anio']}";
-            print_r($this->s__fechas);
-            
-            $fecha_inicio=$this->s__datos_form_asignacion['fecha_inicio'];
-            $fecha_inicio=date('d-m-Y', strtotime($fecha_inicio));
-            $fecha_fin=$this->s__datos_form_asignacion['fecha_fin'];
-            $fecha_fin=date('d-m-Y', strtotime($fecha_fin));
-            //verificamos que la fecha seleccionada del calendario este en el rango especificado por el
-            //usuario en el formulario form_asignacion.
-            if(($fecha >= $fecha_inicio) && ($fecha <= $fecha_fin)){
-                if(!($this->operar_sobre_fecha($fecha, 'f'))){
-                    $this->s__fechas[]=array('fecha'=>$fecha);
-                }
-            }
-            else{
-                toba::notificacion()->agregar(" La fecha seleccionada, $fecha, no pertenece al rango [ $fecha_inicio, $fecha_fin ] ");
-            }
-        }
+//        function evt__calendario__seleccionar_dia ($seleccion){
+//            $fecha="{$seleccion['dia']}-{$seleccion['mes']}-{$seleccion['anio']}";
+//            print_r($this->s__fechas);
+//            
+//            $fecha_inicio=$this->s__datos_form_asignacion['fecha_inicio'];
+//            $fecha_inicio=date('d-m-Y', strtotime($fecha_inicio));
+//            $fecha_fin=$this->s__datos_form_asignacion['fecha_fin'];
+//            $fecha_fin=date('d-m-Y', strtotime($fecha_fin));
+//            //verificamos que la fecha seleccionada del calendario este en el rango especificado por el
+//            //usuario en el formulario form_asignacion.
+//            if(($fecha >= $fecha_inicio) && ($fecha <= $fecha_fin)){
+//                if(!($this->operar_sobre_fecha($fecha, 'f'))){
+//                    $this->s__fechas[]=array('fecha'=>$fecha);
+//                }
+//            }
+//            else{
+//                toba::notificacion()->agregar(" La fecha seleccionada, $fecha, no pertenece al rango [ $fecha_inicio, $fecha_fin ] ");
+//            }
+//        }
         
         /*
          * operar_sobre_fecha cumple con dos funciones :
@@ -1297,51 +1316,63 @@ class ci_cargar_asignaciones extends toba_ci
          * b) elimina una fecha existente en la estructura s__fechas, para ello debemos pasar como segundo 
          * parametro la letra e.
          */
-        function operar_sobre_fecha ($fecha_calendario, $operacion){          
-            
-            $existe=FALSE;
-            foreach ($this->s__fechas as $clave=>$fecha){
-                // unset nos permite destruir una variable, eso quiere decir que borrar su contenido y libera
-                // el espacio de memoria que ocupa. El problema que tenemos es que al aplicar unset sobre 
-                // eltos de un arreglo nos genera huecos en el mismo, lo que hace que una busqueda por indice
-                // sea inapropiada.
-                //$r=strcmp($fecha['fecha'], $fecha_calendario);
-                //print_r("<br> Este es el resultado de comparar fechas, {$fecha['fecha']} = $fecha_calendario -> $r. <br>");
-                if(strcmp($fecha['fecha'], $fecha_calendario)==0){
-                    $existe=TRUE;
-                    
-                    if(strcmp($operacion, 'e')==0){
-                        //$this->s__fechas[$longitud]=NULL;
-                        unset($this->s__fechas[$clave]);
-                    }
-                }
-                
-            }
-            
-            return $existe;
-        }
+//        function operar_sobre_fecha ($fecha_calendario, $operacion){          
+//            
+//            $existe=FALSE;
+//            foreach ($this->s__fechas as $clave=>$fecha){
+//                // unset nos permite destruir una variable, eso quiere decir que borrar su contenido y libera
+//                // el espacio de memoria que ocupa. El problema que tenemos es que al aplicar unset sobre 
+//                // eltos de un arreglo nos genera huecos en el mismo, lo que hace que una busqueda por indice
+//                // sea inapropiada.
+//                //$r=strcmp($fecha['fecha'], $fecha_calendario);
+//                //print_r("<br> Este es el resultado de comparar fechas, {$fecha['fecha']} = $fecha_calendario -> $r. <br>");
+//                if(strcmp($fecha['fecha'], $fecha_calendario)==0){
+//                    $existe=TRUE;
+//                    
+//                    if(strcmp($operacion, 'e')==0){
+//                        //$this->s__fechas[$longitud]=NULL;
+//                        unset($this->s__fechas[$clave]);
+//                    }
+//                }
+//                
+//            }
+//            
+//            return $existe;
+//        }
         
         //---- Cuadro Fechas ---------------------------------------------------------------------------
         
-        function conf__cuadro_fechas (toba_ei_cuadro $cuadro){
-            if(count($this->s__fechas)>0){
-                $cuadro->set_datos($this->s__fechas);
+        function conf__cuadro_fechas (toba_ei_cuadro $cuadro){         
+            $fecha_inicio=$this->s__datos_form_asignacion['fecha_inicio'];
+            $fecha_fin=$this->s__datos_form_asignacion['fecha_fin'];
+            $dias_seleccionados=$this->s__datos_form_asignacion['dias'];
+            $fechas=$this->get_dias($fecha_inicio, $fecha_fin, $dias_seleccionados);
+            
+            print_r($fechas);
+            if(count($fechas)>0){
+                $cuadro->set_datos($this->crear_estructura_cuadro($fechas));
             }
         }
         
+        function evt__cuadro_fechas__seleccionar (){
+            
+        }
+        
         function evt__cuadro_fechas__eliminar ($fecha_cuadro){
-//            print_r("<br>");
-//            print_r($this->s__fechas);
-//            print_r("<br>");
             $r=$this->operar_sobre_fecha($fecha_cuadro['fecha'], 'e');
-            //print_r("<br> Esta es la fecha seleccionada del cuadro {$fecha_cuadro['fecha']}, y este es el valor booleando devuelto por operar_sobre_fechas : $r. <br>");
         }
         
         function evt__volver_a_asig (){
             //$this->set_pantalla('pant_asignacion');
         }
         
+        function conf__cuadro_horarios_disponibles (toba_ei_cuadro $cuadro){
+            
+        }
+        
+        //----------------------------------------------------------------------------------------------
         //---- Pant Catedra ----------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------------------
         
         function conf__pant_catedra (toba_ei_pantalla $pantalla){
             $this->pantalla()->tab('pant_extra')->desactivar();
@@ -1479,6 +1510,195 @@ class ci_cargar_asignaciones extends toba_ci
             if((count($cuatrimestre)==0) && (count($examen_final)==0)){
                 return array();
             }
+        }
+        
+        //-------------------------------------------------------------------------------------------------
+        //---- Funciones para obtener fechas de un periodo ------------------------------------------------
+        //-------------------------------------------------------------------------------------------------
+        
+        /*
+         * Esta funcion devuelve los dias que pertenecen a un periodo, formado por fecha_inicio y fecha_fin.
+         */
+        public function get_dias ($fecha_inicio, $fecha_fin, $dias_seleccionados){
+            //aca debemos tratar el caso del mes de febrero, que puede tener 29 dias si el anio es bisiesto
+            $anio=date('Y');
+            $febrero=(($anio%400==0) || (($anio%4==0)&&($anio%100 != 0))) ? 29 : 28;
+            $this->_meses[2]=$febrero;
+
+            //obtenemos dia (01 a 31) y mes (01 a 12) con representacion numerica
+            $dia_inicio=date('d', strtotime($fecha_inicio));
+            $mes_inicio=date('m', strtotime($fecha_inicio));
+
+            $dia_fin=date('d', strtotime($fecha_fin));
+            $mes_fin=date('m', strtotime($fecha_fin));
+
+            if($mes_inicio == $mes_fin){
+                //con mes_inicio y mes_fin obtenemos la cantidad de dias que forman a dichos meses
+                return $this->generar_dias($dia_inicio, $dia_fin, $mes_inicio, $mes_fin, 'mm', $dias_seleccionados, NULL);
+            }
+            else{
+                $diff=$mes_fin - $mes_inicio;
+                if($diff >= 2){ //tenemos meses intermedios entre el periodo seleccionado
+                    //debemos decrementar una unidad de diff, para no repetir meses
+                    return $this->generar_dias($dia_inicio, $dia_fin, $mes_inicio, $mes_fin, 'mnc', $dias_seleccionados, $this->obtener_meses_intermedios($mes_inicio, ($diff - 1)));
+                }
+                else{ //en esta rama diff posee el valor 1, lo que implica que existen meses contiguos
+                    return $this->generar_dias($dia_inicio, $dia_fin, $mes_inicio, $mes_fin, 'mc', $dias_seleccionados, NULL);
+                }
+            }
+
+        }
+
+        /*
+         * Esta funcion determina los meses intermedios entre un periodo. Se utiliza para representar a los meses
+         * valores numericos de 1 a 12.
+         */
+        function obtener_meses_intermedios ($mes_inicio, $diff){
+            $meses_intermedios=array();
+
+            for($i=1; $i<=$diff; $i++){
+                $mes_inicio += 1;
+                $meses_intermedios[]=$mes_inicio;
+            }
+
+            return $meses_intermedios;
+        }
+
+        /*
+         * La variable i puede contener :
+         * mm = mismo mes. @meses_intermedios es NULL.
+         * mc = meses contiguos. @meses_intermedios es NULL.
+         * mnc = meses no contiguos.
+         */
+        function generar_dias ($dia_inicio, $dia_fin, $mes_inicio, $mes_fin, $i, $dias_seleccionados, $meses_intermedios){
+            //guardamos los dias del periodo
+            $dias=array();
+            $anio=date('Y');
+            switch($i){
+                case 'mm' : while($dia_inicio <= $dia_fin){
+                                $fecha=  date('d-m-Y', strtotime("$dia_inicio-$mes_inicio-$anio"));
+                                //print_r("<br>");
+                                //print_r($fecha);
+                                //print_r("<br>");
+                                if($this->es_dia_valido(date('N', strtotime($fecha)), $dias_seleccionados)){
+                                    $dias[]=$fecha;
+                                }
+
+                                $dia_inicio += 1;
+                            }
+
+                            break;
+
+                case 'mc' : $this->obtener_dias($dia_inicio, $mes_inicio, $this->_meses[intval($mes_inicio)], $dias_seleccionados, &$dias);
+                            $this->obtener_dias(1, $mes_fin, $dia_fin, $dias_seleccionados, &$dias);
+
+                            break;
+
+                case 'mnc': //obtenemos los dias para dia_inicio y mes_inicio
+                            $this->obtener_dias($dia_inicio, $mes_inicio, $this->_meses[intval($mes_inicio)], $dias_seleccionados, &$dias);
+                            
+                            //para los meses intermedios podemos obtener los dias sin problemas, avanzamos desde 1 
+                            //hasta el ultimo dia del mes y realizamos el descarte adecuado.
+                            foreach ($meses_intermedios as $clave=>$mes_i){ //mes_i contiene un valor entero
+                                $this->obtener_dias(1, $mes_i, $this->_meses[$mes_i], $dias_seleccionados, &$dias);
+                            }
+
+                            //obtenemos los dias para dia_fin y mes_fin
+                            $this->obtener_dias(1, $mes_fin, $dia_fin, $dias_seleccionados, &$dias);
+
+                            break;
+            }
+
+            return $dias;
+        }
+
+        /*
+         * @mes_inicial : contiene el numero de mes.
+         * @mes : contiene la cantidad de dias de un mes.
+         * 
+         */
+        function obtener_dias ($dia_inicial, $mes_inicial, $mes, $dias_seleccionados, $dias){
+            //$dias=array();
+            $anio=date('Y');
+            //print_r("Mes Inicial : $mes_inicial <br>");
+            //$tipo=  gettype($mes_inicial);
+            //print_r("Tipo de dato : $tipo <br>");
+            //print_r("Dias del mes : $mes <br>");
+            for($i=$dia_inicial; $i<=$mes; $i++){
+                //print_r("Dia inicial : $i <br>");
+                $fecha=  date('d-m-Y', strtotime("$i-$mes_inicial-$anio"));
+                //print_r("<br>");
+                //print_r($fecha);
+                if($this->es_dia_valido(date('N', strtotime($fecha)), $dias_seleccionados)){
+                    $dias[]=$fecha;
+                }
+            }
+
+            //return $dias;
+        }
+
+        /*
+         * @dia_inicio : contiene una representacion numerica de un dia de la semana, puede ser 1,....,7. Se obtiene
+         * con date('N', fecha).
+         */
+        function es_dia_valido ($dia_inicio, $dias_seleccionados){
+            $i=0;
+            $n=count($dias_seleccionados);
+            $fin=FALSE;
+            while($i<$n && !$fin){
+                //podemos obtener Lunes, Martes, .....
+                $dia=$dias_seleccionados[$i];
+                //print_r("Este es el dia inicio : $dia_inicio <br>");
+                //print_r(utf8_decode($this->_dias[$dia_inicio]));
+                if(strcmp(utf8_decode($this->_dias[$dia_inicio]), $dia)==0){
+                    $fin=TRUE;
+                }
+                $i++;
+            }
+            return $fin;
+        }
+        
+        function crear_estructura_cuadro ($fechas){
+            $cuadro=array();
+            $aulas_ua=$this->dep('datos')->tabla('aula')->get_aulas_ua($this->s__id_sede);
+            foreach($fechas as $clave=>$fecha){
+                //con fecha obtenemos periodos, dia, fecha_consulta, debemos tener en cuenta todas las aulas para
+                $periodo=$this->dep('datos')->tabla('periodo')->get_periodo_calendario($fecha, date('Y', strtotime($fecha)));
+                //hacer un poco mas flexible a la operacion.
+                $asignaciones=$this->procesar_periodo($periodo);
+                //con id_sede obtenemos todas las asignaciones para esa fecha, aulas, aulas_ua
+                $aulas=$this->obtener_aulas($asignaciones);
+                //creamos un objeto HorariosDisponibles y realizamos el calculo de horarios
+                $hd=new HorariosDisponibles();
+                //extraemos un horario que tenga incluido hora_inicio y hora_fin especificadas en el formulario
+                $this->s__horarios_disponibles=$hd->calcular_horarios_disponibles($aulas, $aulas_ua, $asignaciones);
+                //creamos la estructura del cuadro_fechas, si no existen horarios cargamos una cadena cualquiera
+                $data=array(
+                    'fecha' => $fecha,
+                    //necesitamos usar strtotime para que nos devuelva el dia adecuado
+                    'dia' => utf8_decode($this->_dias[date('N', strtotime($fecha))]),
+                    'hora_inicio' => '09:00:00',
+                    'hora_fin' => '12:00:00'
+                );
+                $cuadro[]=$data;
+            }
+            
+            return $cuadro;
+        }
+        
+        function extraer_horario ($hora_inicio, $hora_fin){
+            $i=0;
+            $n=count($this->s__horarios_disponibles);
+            $fin=FALSE;
+            while($i<$n && !$fin){
+                $horario=$this->s__horarios_disponibles[$i];
+                if(($hora_inicio >= $horario['hora_inicio'] && $hora_inicio <= $horario['hora_fin']) && ($hora_fin <= $horario['hora_fin'])){
+                    $fin=TRUE;
+                }
+                $i++;
+            }
+            
+            return $horario;
         }
                        
 

@@ -117,7 +117,7 @@ INSERT INTO apex_objeto_eventos (proyecto, evento_id, objeto, identificador, eti
 	'1657', --evento_id
 	'2552', --objeto
 	'agregar_dias', --identificador
-	'Agregar Días', --etiqueta
+	'Analizar Periodo', --etiqueta
 	'1', --maneja_datos
 	NULL, --sobre_fila
 	NULL, --confirmacion

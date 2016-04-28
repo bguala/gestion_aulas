@@ -207,6 +207,18 @@ INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objet
 );
 INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
 	'gestion_aulas', --proyecto
+	'1650', --dep_id
+	'2547', --objeto_consumidor
+	'2779', --objeto_proveedor
+	'cuadro_horarios_disponibles', --identificador
+	NULL, --parametros_a
+	NULL, --parametros_b
+	NULL, --parametros_c
+	NULL, --inicializar
+	NULL  --orden
+);
+INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
+	'gestion_aulas', --proyecto
 	'1490', --dep_id
 	'2547', --objeto_consumidor
 	'2644', --objeto_proveedor
@@ -513,15 +525,21 @@ INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, id
 		</tr>
 		<tr>
 			<td style="text-align: center; background-color: rgb(0, 51, 153); color:white; font-weight:bold;">
-				Calendario</td>
+				Fechas</td>
 			<td style="text-align: center; background-color: rgb(0, 51, 153); color:white;font-weight:bold;">
-				Fechas Seleccionadas</td>
+				Horarios Disponibles</td>
+		</tr>
+		<tr>
+			<td>
+				[dep id=cuadro_fechas]</td>
+			<td style="vertical-align: top;">
+				[dep id=cuadro_horarios_disponibles]</td>
 		</tr>
 		<tr>
 			<td>
 				[dep id=calendario]</td>
 			<td style="vertical-align: top;">
-				[dep id=cuadro_fechas]</td>
+				&nbsp;</td>
 		</tr>
 	</tbody>
 </table>
@@ -676,6 +694,13 @@ INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id)
 	'2547', --objeto_ci
 	'2', --orden
 	'1619'  --dep_id
+);
+INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
+	'gestion_aulas', --proyecto
+	'1313', --pantalla
+	'2547', --objeto_ci
+	'3', --orden
+	'1650'  --dep_id
 );
 INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
 	'gestion_aulas', --proyecto
