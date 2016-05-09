@@ -328,6 +328,7 @@ class HorariosDisponibles {
          */
         private function agregar_capacidad (){
             $id_sede=toba::memoria()->get_dato_instancia(0);
+            
             //$aulas_con_capacidad=$this->dep('datos')->tabla('aula')->get_aulas_mas_capacidad($id_sede);
             $sql="SELECT id_aula, capacidad
                   FROM aula

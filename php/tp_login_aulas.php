@@ -12,7 +12,7 @@ class login extends toba_tp_basico_titulo {
 //		$this->generar_ayuda();		
 //		echo "<div class='item-barra-tit'>".$this->titulo_item()."</div>";
 //		echo "</div>\n\n";
-            echo "<div align='center'><div class='encabezado' >Sistema de Gesti&oacute;n de Aulas v2.0</div></div>"
+            echo "<div align='center'><div class='encabezado' >RukaJa v2.0</div></div>"
             ;
 	}
 	
@@ -39,7 +39,8 @@ class login extends toba_tp_basico_titulo {
                             height : 120px;
                             margin : 0 auto; /*para centar horizontalmente*/
                             padding-top : 25px;
-                            font-size : 15px;
+                            font-size : 30px;
+                            font-family : cursive;
                             color : #B1015C;
                             font-weight : bold;
                         }
@@ -152,7 +153,7 @@ class login extends toba_tp_basico_titulo {
 	{
 		echo "</div></center>";	
                 
-		echo "<center><div class='pie'>Desarrollado por <strong><a href='http://www.siu.edu.ar' style='text-decoration: none' target='_blank'>EQUIPO SIU UNCOMA</a></strong></div></center>";
+		echo "<center><div class='pie'>Desarrollado por <strong><a href='http://euclides.uncoma.edu.ar/' style='text-decoration: none' target='_blank'>EQUIPO SIU UNCOMA</a></strong></div></center>";
 //		echo "<div>Desarrollado por <strong><a href='http://www.siu.edu.ar' style='text-decoration: none' target='_blank'>SIU</a></strong></div>
 //			<div>2002-".date('Y')."</div>";
 		//echo "</div>";

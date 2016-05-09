@@ -15,8 +15,7 @@ class ci_memorando_por_fecha extends toba_ci
         function conf__calendario (toba_ei_calendario $calendario){
             
             $nombre_usuario=toba::usuario()->get_id();
-            $id_sede=$this->dep('datos')->tabla('persona')->get_sede_para_usuario_logueado($nombre_usuario);
-            $this->s__id_sede=$id_sede;
+            $this->s__id_sede=$this->dep('datos')->tabla('persona')->get_sede_para_usuario_logueado($nombre_usuario);
             
             $this->s__id_sede=1;
             

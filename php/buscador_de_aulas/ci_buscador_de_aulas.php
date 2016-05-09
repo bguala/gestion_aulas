@@ -37,11 +37,13 @@ class ci_buscador_de_aulas extends toba_ci
                                     $horarios_disponibles=new HorariosDisponibles();
                                     $horarios_disponibles_por_aula=$horarios_disponibles->calcular_horarios_disponibles($aulas, $aulas_ua, $asignaciones);
                                     
+                                    $cuadro->set_titulo(utf8_decode("Asignación Definitiva"));
                                     $cuadro->set_datos($this->extraer_aulas_disponibles($horarios_disponibles_por_aula, $hora_inicio, $hora_fin));
                                     
                                     break;
                                 
-                case 'Periodo' :  echo "Que hacemos aqui?";
+                case 'Periodo' :  $cuadro->set_titulo(utf8_decode("Asignación por Periodo"));
+                                  $cuadro->set_datos($this->dep('datos')->tabla('aula')->get_aulas_por_sede($id_sede));
                                   break;
             }
             

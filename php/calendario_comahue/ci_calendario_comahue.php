@@ -66,9 +66,8 @@ class ci_calendario_comahue extends toba_ci
         function conf__formulario (toba_ei_formulario $form){
             
             $nombre_usuario=toba::usuario()->get_id();
-            $id_sede=$this->dep('datos')->tabla('persona')->get_sede_para_usuario_logueado($nombre_usuario);
-
-            $this->s__id_sede=$id_sede;           
+            $this->s__id_sede=$this->dep('datos')->tabla('persona')->get_sede_para_usuario_logueado($nombre_usuario);
+           
             $this->s__id_sede=1;
             
             $fecha="{$this->s__fecha_seleccionada['dia']}-{$this->s__fecha_seleccionada['mes']}-{$this->s__fecha_seleccionada['anio']}";
@@ -325,7 +324,7 @@ class ci_calendario_comahue extends toba_ci
         function obtener_asignaciones (){
             $anio_lectivo=date('Y', strtotime($this->s__fecha_consulta));
             $periodo=$this->dep('datos')->tabla('periodo')->get_periodo_calendario($this->s__fecha_consulta, $anio_lectivo);            
-            //print_r($periodo);
+            print_r($periodo);
             $this->s__asignaciones=$this->procesar_periodo($periodo, 'hr');
             
             if(count($this->s__asignaciones)==0){
@@ -395,7 +394,7 @@ class ci_calendario_comahue extends toba_ci
                                               //pero que pertenecen a un examen_final
                                               $examen_final=$this->dep('datos')->tabla('asignacion')->get_asignaciones_examen_final($this->s__id_sede, $this->s__dia_consulta, $valor['id_periodo'], $this->s__fecha_consulta);
                                           }
-                                          else{
+                                          else{ //la operacion se cuelga porque esta mal el nombre de la funcion
                                               $examen_final=$this->dep('datos')->tabla('asignacion')->get_asignaciones_periodo_por_fecha_para_examen($this->s__id_sede, $this->s__dia_consulta, $valor['id_periodo'], $this->s__fecha_consulta);
                                           }
                                           break;

@@ -29,6 +29,9 @@ class ci_cargar_asignaciones extends toba_ci
         protected $s__docentes_seleccionados=array();   //contiene los miembros del equipo de catedra
         protected $s__cargar_fechas;
         protected $s__calendario;
+        protected $s__id_sede;
+        protected $s__fecha_consulta;
+        protected $s__dia_consulta;
         
         //guardamos la cantidad de dias que forman a un mes. Se configura teniendo en cuenta anios bisiestos
         protected $_meses=array(
@@ -111,7 +114,7 @@ class ci_cargar_asignaciones extends toba_ci
         //---- Cuadro -----------------------------------------------------------------------
         
         /*
-         * Este cuadro contiene todas asignaciones que se quiere borrar o editar en el periodo actual.
+         * Este cuadro contiene todas asignaciones que se quieren borrar o editar en el periodo actual.
          */
         function conf__cuadro (toba_ei_cuadro $cuadro){
             if(isset($this->s__where)){
@@ -119,7 +122,7 @@ class ci_cargar_asignaciones extends toba_ci
                 $fecha=date('Y-m-d');
                 $anio_lectivo=date('Y');
                 $periodos=$this->dep('datos')->tabla('periodo')->get_periodo_calendario($fecha, $anio_lectivo);
-                $cuadro->set_datos($this->procesar_periodo($periodos));
+                $cuadro->set_datos($this->procesar_periodo($periodos, "hr"));
                 $cuadro->set_titulo("Listado de asignaciones");
             }
             else{
@@ -170,11 +173,22 @@ class ci_cargar_asignaciones extends toba_ci
         /*
          * Devuelve todos los dias de la semana para cargar el combo tipo 
          */
-        function dias_semana (){
-                      
+        function dias_semana (){            
             $sql="SELECT nombre FROM dia";
             return toba::db()->consultar($sql);
-            
+        }
+        
+        function obtener_dia ($dia_numerico){
+            $dias=array( 
+                         1 => 'Lunes', 
+                         2 => 'Martes',
+                         3 => 'Miércoles', 
+                         4 => 'Jueves', 
+                         5 => 'Viernes', 
+                         6 => 'Sábado'
+                );
+                        
+            return ($dias[$dia_numerico]);
         }
         
         function evt__volver (){
@@ -218,7 +232,8 @@ class ci_cargar_asignaciones extends toba_ci
         //---- Filtro Busqueda -------------------------------------------------------------------
         
         function conf__filtro_busqueda (toba_ei_filtro $filtro){
-            
+            print_r("Este es el perfil de datos: <br>");
+            print_r(toba::usuario()->get_perfil_datos());
         }
         
         function evt__filtro_busqueda__filtrar ($datos){
@@ -346,7 +361,7 @@ class ci_cargar_asignaciones extends toba_ci
         /*
          * esta funcion permite cargar al combo aulas
          */
-        function obtener_aulas (){
+        function obtener_aulas_x (){
             //Hay que tener en cuenta el usuario que se loguea
 //            $nombre_usuario=toba::usuario()->get_id();
 //            $sql="SElECT t_a.nombre, t_a.id_aula 
@@ -356,6 +371,47 @@ class ci_cargar_asignaciones extends toba_ci
             $sql="SELECT nombre, id_aula FROM aula WHERE (NOT eliminada)";
             return toba::db('gestion_aulas')->consultar($sql);
             
+        }
+        
+        /*
+         * genera un arreglo con las aulas utilizadas en un dia especifico.
+         * @espacios_concedidos contiene todos los espacios concedidos en las aulas de una Unidad Academica.  
+         */
+        function obtener_aulas ($espacios_concedidos){
+            $aulas=array();
+            $indice=0;
+            foreach($espacios_concedidos as $clave=>$valor){
+                $aula=array(); // indice => (aula, id_aula)
+                $aula['aula']=$valor['aula'];
+                $aula['id_aula']=$valor['id_aula'];
+                //$aula=$valor['aula'];
+                $existe=$this->existe($aulas, $aula);
+                if(!$existe){
+                    $aulas[$indice]=$aula;
+                    $indice += 1;
+                }
+            }
+            return $aulas;
+        }
+        
+        /*
+         * verifica si un aula ya se encuentra presente en la estructura aulas
+         * @$aulas : contiene un cjto de aulas
+         * @$aula : se verifica que si exista en aulas.
+         */
+        function existe ($aulas, $aula){
+            $existe=FALSE;
+            
+            if(count($aulas) != 0){
+                $indice=0;
+                $longitud=count($aulas);
+                while(($indice < $longitud) && !$existe){
+                    //strcmp($aulas[$indice]['id_aula'], $aula['id_aula'])==0
+                    $existe=($aulas[$indice]['id_aula'] == $aula['id_aula']) ? TRUE : FALSE;
+                    $indice += 1;
+                }
+            }
+            return $existe;
         }
         
         /*
@@ -928,61 +984,52 @@ class ci_cargar_asignaciones extends toba_ci
         /*
          * devuelve false si el contenido de $datos no existe en la BD. (NO SE USA)
          */
-        function existe ($datos){
-            print_r("<br><br>Este es el contenido de datos : <br><br>");
-            print_r($datos);
-            $cuatrimestre=$this->obtener_cuatrimestre();
-            $fecha=date('Y-m-d'); // con Y mayuscula obtenemos el año completo, 2015
-            print_r($fecha);
-            $fecha2=  getdate();
-            $anio=$fecha2['year'];
-            print_r($anio);
-            if(strcmp($this->s__tipo, "Definitiva")==0){
-                $sql=" 
-                      
-                      UNION 
-                  
-                      SELECT t_a.id_asignacion 
-                      FROM asignacion t_a
-                      JOIN aula t_au ON (t_a.id_aula=t_au.id_aula)
-                      JOIN asignacion_periodo t_p ON (t_a.id_asignacion=t_p.id_asignacion and ('$fecha' BETWEEN t_p.fecha_inicio AND t_p.fecha_fin)) 
-                      JOIN esta_formada t_f ON (t_p.id_asignacion=t_f.id_asignacion)
-                      WHERE t_f.nombre='{$this->s__dia}' AND t_f.cuatrimestre=$cuatrimestre AND t_f.anio={$fecha['year']} AND t_au.id_aula={$datos['id_aula']} AND t_a.hora_inicio='{$datos['hora_inicio']}'";
-                $definitiva=toba::db('gestion_aulas')->consultar($sql);  
-                
-                print_r("<br><br>Esta es la asignacion : <br><br>");
-                print_r($definitiva);exit();
-                return ((count($definitiva)>0) ? true : false);
-                  
-            }
-            else{
-                  "UNION 
-                  
-                   SELECT t_a.id_asignacion 
-                   FROM asignacion t_a
-                   JOIN aula t_au ON (t_a.id_aula=t_au.id_aula)
-                   JOIN asignacion_periodo t_d ON (t_a.id_asignacion=t_p.id_asignacion and ('' BETWEEN t_p.fecha_inicio AND t_p.fecha_fin)) 
-                   JOIN esta_formada t_f ON (t_p.id_asignacion=t_f.id_asignacion)
-                   WHERE t_f.nombre={}";
-                  $periodo=toba::db('gestion_aulas')->consultar($sql);
-            }
-            
-        }
+//        function existe ($datos){
+//            print_r("<br><br>Este es el contenido de datos : <br><br>");
+//            print_r($datos);
+//            $cuatrimestre=$this->obtener_cuatrimestre();
+//            $fecha=date('Y-m-d'); // con Y mayuscula obtenemos el año completo, 2015
+//            print_r($fecha);
+//            $fecha2=  getdate();
+//            $anio=$fecha2['year'];
+//            print_r($anio);
+//            if(strcmp($this->s__tipo, "Definitiva")==0){
+//                $sql=" 
+//                      
+//                      UNION 
+//                  
+//                      SELECT t_a.id_asignacion 
+//                      FROM asignacion t_a
+//                      JOIN aula t_au ON (t_a.id_aula=t_au.id_aula)
+//                      JOIN asignacion_periodo t_p ON (t_a.id_asignacion=t_p.id_asignacion and ('$fecha' BETWEEN t_p.fecha_inicio AND t_p.fecha_fin)) 
+//                      JOIN esta_formada t_f ON (t_p.id_asignacion=t_f.id_asignacion)
+//                      WHERE t_f.nombre='{$this->s__dia}' AND t_f.cuatrimestre=$cuatrimestre AND t_f.anio={$fecha['year']} AND t_au.id_aula={$datos['id_aula']} AND t_a.hora_inicio='{$datos['hora_inicio']}'";
+//                $definitiva=toba::db('gestion_aulas')->consultar($sql);  
+//                
+//                print_r("<br><br>Esta es la asignacion : <br><br>");
+//                print_r($definitiva);exit();
+//                return ((count($definitiva)>0) ? true : false);
+//                  
+//            }
+//            else{
+//                  "UNION 
+//                  
+//                   SELECT t_a.id_asignacion 
+//                   FROM asignacion t_a
+//                   JOIN aula t_au ON (t_a.id_aula=t_au.id_aula)
+//                   JOIN asignacion_periodo t_d ON (t_a.id_asignacion=t_p.id_asignacion and ('' BETWEEN t_p.fecha_inicio AND t_p.fecha_fin)) 
+//                   JOIN esta_formada t_f ON (t_p.id_asignacion=t_f.id_asignacion)
+//                   WHERE t_f.nombre={}";
+//                  $periodo=toba::db('gestion_aulas')->consultar($sql);
+//            }
+//            
+//        }
         
         function evt__form_asignacion__cancelar (){
             $this->dep('form_persona')->colapsar();
             $this->set_pantalla('pant_persona');
         }
         
-        function obtener_cuatrimestre (){
-            $fecha=  getdate();
-            $cuatrimestre=2;
-            if(($fecha['mon'])>=1 && ($fecha['mon'])<=6){
-                $cuatrimestre=1;
-            }
-            
-            return $cuatrimestre;
-        }
         
         /*
          * Permite obtener todas las asignaciones de la persona durante un periodo academico, puede ser
@@ -1354,8 +1401,8 @@ class ci_cargar_asignaciones extends toba_ci
             }
         }
         
-        function evt__cuadro_fechas__seleccionar (){
-            
+        function evt__cuadro_fechas__seleccionar ($fecha_cuadro){
+            //disparamos el calculo de horarios para la fecha seleccionada
         }
         
         function evt__cuadro_fechas__eliminar ($fecha_cuadro){
@@ -1484,12 +1531,22 @@ class ci_cargar_asignaciones extends toba_ci
         //---- Funcion para procesar periodos ----------------------------------------------------------
         //----------------------------------------------------------------------------------------------
         
-        function procesar_periodo ($periodos){
+        function procesar_periodo ($periodos, $i){
             foreach($periodos as $clave=>$valor){
                 switch ($valor['tipo_periodo']){
-                    case 'Cuatrimestre' : $cuatrimestre=$this->dep('datos')->tabla('asignacion')->get_asignaciones($this->s__where, $valor['id_periodo']);
+                    case 'Cuatrimestre' : if(strcmp($i, "hd")==0){
+                                            $cuatrimestre=$this->dep('datos')->tabla('asignacion')->get_asignaciones_cuatrimestre($this->s__id_sede, $this->s__dia_consulta, $valor['id_periodo'], $this->s__fecha_consulta);
+                                          }else{
+                                               $cuatrimestre=$this->dep('datos')->tabla('asignacion')->get_asignaciones($this->s__where, $valor['id_periodo']);
+                                          }
+                                          
                                           break;
-                    case 'Examen Final' : $examen_final=$this->dep('datos')->tabla('asignacion')->get_asignaciones($this->s__where, $valor['id_periodo']);
+                                          
+                    case 'Examen Final' : if(strcmp($i, "hd")==0){
+                                            $examen_final=$this->dep('datos')->tabla('asignacion')->get_asignaciones_examen_final($this->s__id_sede, $this->s__dia_consulta, $valor['id_periodo'], $this->s__fecha_consulta);
+                                          }else{
+                                                $examen_final=$this->dep('datos')->tabla('asignacion')->get_asignaciones($this->s__where, $valor['id_periodo']);
+                                          }
                                           break;
                 }
             }
@@ -1660,33 +1717,57 @@ class ci_cargar_asignaciones extends toba_ci
         
         function crear_estructura_cuadro ($fechas){
             $cuadro=array();
-            $aulas_ua=$this->dep('datos')->tabla('aula')->get_aulas_ua($this->s__id_sede);
+            //necesitamos la sede del usuario logueado
+            $nombre_usuario=toba::usuario()->get_id();
+            $this->s__id_sede=$this->dep('datos')->tabla('persona')->get_sede_para_usuario_logueado($nombre_usuario);
+            $this->s__id_sede=1;
+            toba::memoria()->limpiar_datos_instancia();
+            
+            $hd=new HorariosDisponibles();
+            $aulas_ua=$this->dep('datos')->tabla('aula')->get_aulas_por_sede($this->s__id_sede);
+            
             foreach($fechas as $clave=>$fecha){
-                //con fecha obtenemos periodos, dia, fecha_consulta, debemos tener en cuenta todas las aulas para
+                //guardamos el id_sede en sesion para agregar la capacidad del aula al resultado
+                toba::memoria()->set_dato_instancia(0, $this->s__id_sede);
+                //guardamos la fecha de consulta para extraer asig. en procesar_periodo
+                $this->s__fecha_consulta=date('Y-m-d', strtotime($fecha));
+                $this->s__dia_consulta=utf8_decode($this->obtener_dia(date('N', strtotime($this->s__fecha_consulta))));
+                //con la fecha obtenemos los periodos academicos correspondientes
                 $periodo=$this->dep('datos')->tabla('periodo')->get_periodo_calendario($fecha, date('Y', strtotime($fecha)));
-                //hacer un poco mas flexible a la operacion.
-                $asignaciones=$this->procesar_periodo($periodo);
-                //con id_sede obtenemos todas las asignaciones para esa fecha, aulas, aulas_ua
+                //con el periodo obtenemos las asignaciones
+                $asignaciones=$this->procesar_periodo($periodo, "hd");
+                //obtenemos las aulas que actualmente estan ocupadas
                 $aulas=$this->obtener_aulas($asignaciones);
                 //creamos un objeto HorariosDisponibles y realizamos el calculo de horarios
-                $hd=new HorariosDisponibles();
-                //extraemos un horario que tenga incluido hora_inicio y hora_fin especificadas en el formulario
+                
                 $this->s__horarios_disponibles=$hd->calcular_horarios_disponibles($aulas, $aulas_ua, $asignaciones);
-                //creamos la estructura del cuadro_fechas, si no existen horarios cargamos una cadena cualquiera
-                $data=array(
-                    'fecha' => $fecha,
-                    //necesitamos usar strtotime para que nos devuelva el dia adecuado
-                    'dia' => utf8_decode($this->_dias[date('N', strtotime($fecha))]),
-                    'hora_inicio' => '09:00:00',
-                    'hora_fin' => '12:00:00'
-                );
-                $cuadro[]=$data;
+                
+                $hora_inicio=$this->s__datos_form_asignacion['hora_inicio'];
+                $hora_fin=$this->s__datos_form_asignacion['hora_fin'];
+                $datos=array();
+                
+                if(!$this->existe_inclusion($hora_inicio, $hora_fin, &$datos)){
+                    $hora_inicio="00:00:00";
+                    $hora_fin="00:00:00";
+                }
+                
+                //creamos la estructura del cuadro_fechas, si no existen horarios cargamos una cadena 00:00:00
+                $datos['fecha']=$fecha;
+                //necesitamos usar strtotime para que nos devuelva el dia adecuado
+                $datos['dia']=utf8_decode($this->_dias[date('N', strtotime($fecha))]);
+                $datos['hora_inicio']=$hora_inicio;
+                $datos['hora_fin']=$hora_fin;
+                
+                $cuadro[]=$datos;
+                
+                //debemos resetear el arreglo para no acumular resultados
+                $this->s__horarios_disponibles=array();
             }
             
             return $cuadro;
         }
         
-        function extraer_horario ($hora_inicio, $hora_fin){
+        function existe_inclusion ($hora_inicio, $hora_fin, $cuadro){
             $i=0;
             $n=count($this->s__horarios_disponibles);
             $fin=FALSE;
@@ -1694,6 +1775,8 @@ class ci_cargar_asignaciones extends toba_ci
                 $horario=$this->s__horarios_disponibles[$i];
                 if(($hora_inicio >= $horario['hora_inicio'] && $hora_inicio <= $horario['hora_fin']) && ($hora_fin <= $horario['hora_fin'])){
                     $fin=TRUE;
+                    $cuadro['aula']=$horario['aula'];
+                    $cuadro['id_aula']=$horario['id_aula'];
                 }
                 $i++;
             }
