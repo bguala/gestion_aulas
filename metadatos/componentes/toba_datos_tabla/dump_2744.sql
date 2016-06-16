@@ -49,19 +49,19 @@ INSERT INTO apex_objeto_db_registros (objeto_proyecto, objeto, max_registros, mi
 	'2744', --objeto
 	NULL, --max_registros
 	NULL, --min_registros
-	NULL, --punto_montaje
+	'19', --punto_montaje
 	'1', --ap
 	NULL, --ap_clase
 	NULL, --ap_archivo
 	'periodo', --tabla
 	NULL, --tabla_ext
 	NULL, --alias
-	NULL, --modificar_claves
+	'0', --modificar_claves
 	'gestion_aulas', --fuente_datos_proyecto
 	'gestion_aulas', --fuente_datos
 	'1', --permite_actualizacion_automatica
 	NULL, --esquema
-	NULL  --esquema_ext
+	'public'  --esquema_ext
 );
 
 ------------------------------------------------------------

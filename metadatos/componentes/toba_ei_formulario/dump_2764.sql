@@ -61,7 +61,7 @@ INSERT INTO apex_objeto_ut_formulario (objeto_ut_formulario_proyecto, objeto_ut_
 	NULL, --clase_proyecto
 	NULL, --clase
 	NULL, --auto_reset
-	'450px', --ancho
+	'900px', --ancho
 	'150px', --ancho_etiqueta
 	'0', --expandir_descripcion
 	NULL, --campo_bl

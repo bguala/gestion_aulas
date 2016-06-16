@@ -147,18 +147,6 @@ INSERT INTO apex_objeto_mt_me (objeto_mt_me_proyecto, objeto_mt_me, ev_procesar_
 --- INICIO Grupo de desarrollo 0
 INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
 	'gestion_aulas', --proyecto
-	'1612', --dep_id
-	'2547', --objeto_consumidor
-	'2757', --objeto_proveedor
-	'calendario', --identificador
-	NULL, --parametros_a
-	NULL, --parametros_b
-	NULL, --parametros_c
-	NULL, --inicializar
-	NULL  --orden
-);
-INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
-	'gestion_aulas', --proyecto
 	'1527', --dep_id
 	'2547', --objeto_consumidor
 	'2682', --objeto_proveedor
@@ -517,7 +505,7 @@ INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, id
 	NULL, --eventos
 	NULL, --subclase
 	NULL, --subclase_archivo
-	'<table align="center" border="1">
+	'<table align="left">
 	<tbody>
 		<tr>
 			<td align="center" colspan="2">
@@ -534,12 +522,6 @@ INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, id
 				[dep id=cuadro_fechas]</td>
 			<td style="vertical-align: top;">
 				[dep id=cuadro_horarios_disponibles]</td>
-		</tr>
-		<tr>
-			<td>
-				[dep id=calendario]</td>
-			<td style="vertical-align: top;">
-				&nbsp;</td>
 		</tr>
 	</tbody>
 </table>
@@ -679,27 +661,20 @@ INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id)
 	'1313', --pantalla
 	'2547', --objeto_ci
 	'0', --orden
-	'1612'  --dep_id
-);
-INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
-	'gestion_aulas', --proyecto
-	'1313', --pantalla
-	'2547', --objeto_ci
-	'1', --orden
 	'1614'  --dep_id
 );
 INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
 	'gestion_aulas', --proyecto
 	'1313', --pantalla
 	'2547', --objeto_ci
-	'2', --orden
+	'1', --orden
 	'1619'  --dep_id
 );
 INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
 	'gestion_aulas', --proyecto
 	'1313', --pantalla
 	'2547', --objeto_ci
-	'3', --orden
+	'2', --orden
 	'1650'  --dep_id
 );
 INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
